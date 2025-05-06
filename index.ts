@@ -1,17 +1,30 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import * as express from 'express';
-import * as functions from 'firebase-functions';
+import { onRequest } from 'firebase-functions/v2/https';
 import { AppModule } from './src/app.module';
+
 const expressServer = express();
+let app: any;
+
 const createFunction = async (expressInstance): Promise<void> => {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressInstance),
-  );
-await app.init();
+  if (!app) {
+    app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressInstance),
+    );
+    await app.init();
+  }
 };
-export const api = functions.https.onRequest(async (request, response) => {
-  await createFunction(expressServer);
-  expressServer(request, response);
-});
+
+export const api = onRequest(
+  { 
+    memory: '256MiB',
+    region: 'asia-southeast2',
+    minInstances: 1
+  }, 
+  async (request, response) => {
+    await createFunction(expressServer);
+    expressServer(request, response);
+  }
+);
