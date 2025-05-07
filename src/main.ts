@@ -16,6 +16,10 @@ async function bootstrap() {
     whitelist: true,
     forbidNonWhitelisted: true,
   }));
+  
+  // Penting: tambahkan prefix 'api' untuk serverless function
+  app.setGlobalPrefix('api');
+  
   app.enableCors();
 
   const config = new DocumentBuilder()
@@ -30,4 +34,13 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
+
 bootstrap();
+
+// Tambahkan ini untuk support Vercel
+export default async function handler(req, res) {
+  const app = await NestFactory.create(AppModule);
+  await app.init();
+  const instance = app.getHttpAdapter().getInstance();
+  return instance(req, res);
+}
